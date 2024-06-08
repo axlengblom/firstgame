@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 
 # a basic layout for the game
 
@@ -7,13 +8,66 @@ import random
 pygame.init()
 
 spritesheet = pygame.image.load("pygame/first/assets/player/roguelikeChar_transparent.png")
-map = pygame.image.load("pygame/first/assets/map/map.png")
 
 # create a screen
-screen = pygame.display.set_mode((918, 515))
+screen = pygame.display.set_mode((800, 600))
 
+# River area
+clean_x = 100
+clean_y = 500
+clean_width = 700
+clean_height = 100
 
+def draw_river(screen, frame):
+    river_color = (0, 0, 255)
+    wave_amplitude = 5
+    wave_frequency = 50
+    river_points = [
+        (100, 500 + wave_amplitude * math.sin(frame / wave_frequency + 0)),
+        (200, 400 + wave_amplitude * math.sin(frame / wave_frequency + 1)),
+        (300, 450 + wave_amplitude * math.sin(frame / wave_frequency + 2)),
+        (400, 350 + wave_amplitude * math.sin(frame / wave_frequency + 3)),
+        (500, 400 + wave_amplitude * math.sin(frame / wave_frequency + 4)),
+        (600, 300 + wave_amplitude * math.sin(frame / wave_frequency + 5)),
+        (700, 350 + wave_amplitude * math.sin(frame / wave_frequency + 6)),
+        (800, 250 + wave_amplitude * math.sin(frame / wave_frequency + 7)),
+        (800, 600), 
+        (0, 600)
+        ]
+    pygame.draw.polygon(screen, river_color, river_points)
 # set the title of the game
+
+def clean_dirt():
+    global dirt, silver, gold, gems
+
+    if dirt > 0:
+        for i in range(0, 100):
+            draw_progress_bar(screen, clean_x, clean_y - 20, i)
+        dirt -= 1
+        item = random.randint(1, 100)
+        print(item)
+        if 35 < item < 70:
+            silver += 1
+            print("Silver added to inventory total amount of silver: ", silver)
+        elif 70 < item < 90:
+            gold += 1
+            print("Gold added to inventory total amount of gold: ", gold)
+        elif 90 < item < 100:
+            gems += 1
+            print("Gems added to inventory total amount of gems: ", gems)
+        else:
+            print("No item was found")
+    else:
+        for i in range(0, 100):
+            draw_progress_bar(screen, clean_x, clean_y - 20, i)
+            pygame.time.wait(1)
+        print("No dirt in inventory")
+
+def draw_progress_bar(screen, x, y, progress):
+    pygame.draw.rect(screen, (255, 255, 255), (x, y, progress, 10))
+    pygame.display.flip()
+    pygame.time.wait(10)
+
 pygame.display.set_caption("My First Game")
 
 #variables for the player 
@@ -38,11 +92,7 @@ dig_y = random.randint(0, screen.get_height())
 dig_width = 100 
 dig_height = 100
 
-#varibles for the cleaning area that is randomized at the start of the game
-clean_x = random.randint(0, screen.get_width())
-clean_y = random.randint(0, screen.get_height())
-clean_width = 100 
-clean_height = 100
+
 
 #variables for the players inventory
 dirt = 0    #amount of dirt in the players inventory
@@ -54,6 +104,7 @@ silver  = 0 #amount of silver in the players inventory
 clock = pygame.time.Clock()
 dt = 1000/60
 
+frame = 0
 # game loop
 running = True
 while running:
@@ -62,8 +113,8 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    #load the map as the background of the game
-    screen.blit(map, (0, 0))
+    #draw the background looking like dark green grass
+    screen.fill((0, 100, 0))
 
 
     #create a loop that check that the entire digging area is inside the screen and redraws the area until is inside the screen
@@ -76,14 +127,9 @@ while running:
     #draw the digging area as a brown area
     pygame.draw.rect(screen, (139,69,19), (dig_x, dig_y, dig_width, dig_height))
 
-
-    #check that the cleaning area is not in the same position as the digging area and that the entire cleaning area is inside the screen
-    while clean_x + clean_width > screen.get_width() or clean_y + clean_height > screen.get_height() or (clean_x > dig_x and clean_x < dig_x + dig_width and clean_y > dig_y and clean_y < dig_y + dig_height):
-        clean_x = random.randint(0, screen.get_width())
-        clean_y = random.randint(0, screen.get_height())
-
     #draw the cleaning area as a dark blue area running like a river running through the map
-    pygame.draw.rect(screen, (0, 0, 139), (clean_x, clean_y, clean_width, clean_height))
+    draw_river(screen, frame)
+
 
     #draw the player as a character using an image
     #transform the image to the size of the player
@@ -117,43 +163,22 @@ while running:
     if player_x > dig_x and player_x < dig_x + dig_width and player_y > dig_y and player_y < dig_y + dig_height:
         if keys[pygame.K_SPACE]:
             for i in range(0, 100):
-                pygame.draw.rect(screen, (255, 255, 255), (player_x - 24, player_y - 20, i / 2, 10))
+                pygame.draw.rect(screen, (255, 255, 255), (dig_x, dig_y - 20, i, 10))
                 pygame.display.flip()
                 pygame.time.wait(10)
             dirt += 1
             print("Dirt added to inventory total amount of dirt: ", dirt)
 
-    #when the player is in the cleaning area and has dirt in the inventory the dirt will be turned into silver gold or gems with increasing rarity and the amount of the item will be added to the inventory while the dirt will be removed, 1 dirt will be removed for each press of the key
-    if player_x > clean_x and player_x < clean_x + clean_width and player_y > clean_y and player_y < clean_y + clean_height:
+    
+    if clean_x < player_x < clean_x + clean_width and clean_y < player_y < clean_y + clean_height:
         if keys[pygame.K_SPACE]:
-            if dirt > 0:
-                for i in range(0, 100):
-                    pygame.draw.rect(screen, (255, 255, 255), (player_x - 24, player_y - 20, i/2, 10))
-                    pygame.display.flip()
-                    pygame.time.wait(10)
-                dirt -= 1
-                item = random.randint(1, 100)
-                print(item)
-                if item > 35 and item < 70:
-                    silver += 1
-                    print("Silver added to inventory total amount of silver: ", silver)
-                elif item > 70 and item < 90:
-                    gold += 1
-                    print("Gold added to inventory total amount of gold: ", gold)
-                elif item > 90 and item < 100:
-                    gems += 1
-                    print("Gems added to inventory total amount of gems: ", gems)
-                else:
-                    print("No item was found")
-            else:
-                pygame.time.wait(100)
-                print("No dirt in inventory")
-
+            clean_dirt()
             
     # update the screen
     pygame.display.flip()
 
     dt = clock.tick(60)/1000
+    frame += 1
 # quit the game
 
 pygame.quit()
